@@ -1,5 +1,17 @@
 fastapi
+<<<<<<< Updated upstream
 uvicorn
 anthropic
 python-dotenv
 requests 
+=======
+uvicorn[standard]
+tortoise-orm
+python-dotenv
+asyncpg
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart
+email-validator
+pydantic
+>>>>>>> Stashed changes
