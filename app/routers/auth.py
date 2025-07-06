@@ -37,17 +37,17 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     )
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise credentials_exception
-        token_data = TokenData(email=email)
+        # email: str = payload.get("sub")
+        # if email is None:
+        #     raise credentials_exception
+        # token_data = TokenData(email=email)
     except JWTError:
         raise credentials_exception
     
-    user = await User.filter(email=token_data.email).first()
-    if user is None:
-        raise credentials_exception
-    return user
+    # user = await User.filter(email=token_data.email).first()
+    # if user is None:
+    #     raise credentials_exception
+    # return user
 
 @router.post("/register", response_model=UserResponse)
 async def register(user_data: UserCreate):

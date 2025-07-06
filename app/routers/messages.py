@@ -6,19 +6,16 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
-from mem0 import MemoryClient
-from anthropic import Anthropic
+# from mem0 import MemoryClient
+# from anthropic import Anthropic
 
 # Load environment variables
 load_dotenv()
 
 router = APIRouter(prefix="/couples/{couple_id}/messages", tags=["messages"])
 
-# Initialize mem0 client for AI agents
-client = MemoryClient(api_key=os.getenv("MEM0_API_KEY"))
-
-# Initialize Anthropic client for Claude 3 Haiku
-anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+# client = MemoryClient(api_key=os.getenv("MEM0_API_KEY"))
+# anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 
 def get_couple_ai_agent(couple_id: int) -> str:
@@ -56,32 +53,32 @@ Assistant:"""
     return full_prompt
 
 
-def call_llm(full_prompt):
-    try:
-        response = anthropic_client.messages.create(
-            model="claude-3-haiku-20240307",
-            max_tokens=1000,
-            messages=[
-                {
-                    "role": "user",
-                    "content": full_prompt
-                }
-            ]
-        )
+# def call_llm(full_prompt):
+#     try:
+#         response = anthropic_client.messages.create(
+#             model="claude-3-haiku-20240307",
+#             max_tokens=1000,
+#             messages=[
+#                 {
+#                     "role": "user",
+#                     "content": full_prompt
+#                 }
+#             ]
+#         )
         
-        # Extract text content from the response
-        if response.content and len(response.content) > 0:
-            content_block = response.content[0]
-            if hasattr(content_block, 'text'):
-                return content_block.text
-            else:
-                return str(content_block)
-        else:
-            return "I apologize, but I received an empty response. Please try again."
+#         # Extract text content from the response
+#         if response.content and len(response.content) > 0:
+#             content_block = response.content[0]
+#             if hasattr(content_block, 'text'):
+#                 return content_block.text
+#             else:
+#                 return str(content_block)
+#         else:
+#             return "I apologize, but I received an empty response. Please try again."
             
-    except Exception as e:
-        print(f"Error calling Claude 3 Haiku: {e}")
-        return "I apologize, but I'm having trouble processing your request right now. Please try again later."
+#     except Exception as e:
+#         print(f"Error calling Claude 3 Haiku: {e}")
+#         return "I apologize, but I'm having trouble processing your request right now. Please try again later."
 
 
 class SendMessageRequest(BaseModel):
@@ -89,29 +86,29 @@ class SendMessageRequest(BaseModel):
     sender_id: Optional[str] = None  # Optional: to track who sent the message
 
 
-@router.post("")
-async def send_message(couple_id: int, request: SendMessageRequest):
-    couple_agent = get_couple_ai_agent(couple_id)
+# @router.post("")
+# async def send_message(couple_id: int, request: SendMessageRequest):
+#     couple_agent = get_couple_ai_agent(couple_id)
 
-    client.add([{"role": "user", "content": request.message}], user_id=couple_agent)
+#     client.add([{"role": "user", "content": request.message}], user_id=couple_agent)
 
-    memories = client.search(request.message, user_id=couple_agent)
-    print(f"Relevant memories for couple {couple_id}: {len(memories)} found")
+#     memories = client.search(request.message, user_id=couple_agent)
+#     print(f"Relevant memories for couple {couple_id}: {len(memories)} found")
 
-    prompt_data = construct_prompt(request.message, memories)
+#     prompt_data = construct_prompt(request.message, memories)
 
-    ai_response = call_llm(prompt_data)
+#     ai_response = call_llm(prompt_data)
 
-    client.add([{"role": "assistant", "content": ai_response}], user_id=couple_agent)
+#     client.add([{"role": "assistant", "content": ai_response}], user_id=couple_agent)
 
-    return JSONResponse({
-        "couple_agent": couple_agent,
-        "user_message": request.message,
-        "sender_id": request.sender_id,
-        "ai_response": ai_response,
-        "prompt_data": prompt_data,
-        "memories_used": len(memories)
-    })
+#     return JSONResponse({
+#         "couple_agent": couple_agent,
+#         "user_message": request.message,
+#         "sender_id": request.sender_id,
+#         "ai_response": ai_response,
+#         "prompt_data": prompt_data,
+#         "memories_used": len(memories)
+#     })
 
 
 @router.get("")

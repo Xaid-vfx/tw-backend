@@ -1,17 +1,23 @@
+# Essential dependencies for the FastAPI + Tortoise ORM backend
 fastapi
-<<<<<<< Updated upstream
-uvicorn
-anthropic
-python-dotenv
-requests 
-=======
 uvicorn[standard]
 tortoise-orm
+asyncpg  # PostgreSQL driver for tortoise
+
 python-dotenv
-asyncpg
+
+# Security / auth helpers
 passlib[bcrypt]
 python-jose[cryptography]
 python-multipart
 email-validator
+
+# Data validation and serialization
 pydantic
->>>>>>> Stashed changes
+
+requests
+
+anthropic
+
+# Database migrations for Tortoise ORM
+aerich

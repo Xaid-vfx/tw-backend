@@ -8,6 +8,14 @@ from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+# Public endpoints 
+@router.get("/check-email")
+async def check_email_exists(email: str = Query(..., description="Email address to check")):
+    """Check if a user with the given email exists. Public endpoint."""
+    user = await User.filter(email=email).first()
+    return {"exists": user is not None}
+
+# Protected endpoints 
 @router.get("/", response_model=List[UserResponse])
 async def get_users(
     skip: int = Query(0, ge=0),
