@@ -1,33 +1,20 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
-from tortoise.exceptions import IntegrityError
 import os
-from typing import Optional
+
+from tortoise.exceptions import IntegrityError
 
 from app.models.user import User
-from app.schemas import UserCreate, UserLogin, Token, TokenData, UserResponse
+from app.schemas import UserCreate, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# JWT Settings
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")  # Change this in production
+# Supabase JWT settings
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "your-supabase-jwt-secret")  # Change in production
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 security = HTTPBearer()
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     credentials_exception = HTTPException(
@@ -35,19 +22,37 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        # email: str = payload.get("sub")
-        # if email is None:
-        #     raise credentials_exception
-        # token_data = TokenData(email=email)
-    except JWTError:
-        raise credentials_exception
     
-    # user = await User.filter(email=token_data.email).first()
-    # if user is None:
-    #     raise credentials_exception
-    # return user
+    print("Auth header:", credentials.credentials)
+
+    # Ensure a token is present
+    if not credentials or not credentials.credentials:
+        raise credentials_exception
+
+    print("secret-len:", len(SUPABASE_JWT_SECRET), " first12:", SUPABASE_JWT_SECRET[:12])
+
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            SUPABASE_JWT_SECRET,
+            algorithms=[ALGORITHM],
+            audience="authenticated"
+        )
+
+        print("payload:", payload)
+        email: str | None = payload.get("email")
+        if email is None:
+            raise credentials_exception
+    except JWTError as e:
+        print("JWTError -->", e)
+        raise credentials_exception
+
+    # Fetch corresponding user from local DB
+    user = await User.filter(email=email).first()
+    if user is None:
+        # Optionally auto-create a local profile here.
+        raise credentials_exception
+    return user
 
 @router.post("/register", response_model=UserResponse)
 async def register(user_data: UserCreate):
@@ -86,40 +91,4 @@ async def register(user_data: UserCreate):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this email or username already exists"
-        )
-
-@router.post("/login", response_model=Token)
-async def login(user_credentials: UserLogin):
-    user = await User.filter(email=user_credentials.email).first()
-    if not user or not user.check_password(user_credentials.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User account is deactivated"
-        )
-    
-    # Update last login
-    await user.update_last_login()
-    
-    # Create access token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
-    
-    return {"access_token": access_token, "token_type": "bearer"}
-
-@router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
-    return UserResponse.from_orm(current_user)
-
-@router.post("/logout")
-async def logout():
-    # In a real app, you might want to blacklist the token
-    return {"message": "Successfully logged out"} 
+        ) 

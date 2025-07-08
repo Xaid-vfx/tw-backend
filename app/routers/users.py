@@ -26,14 +26,13 @@ async def get_users(
     users = await User.all().offset(skip).limit(limit)
     return [UserResponse.from_orm(user) for user in users]
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/user-details", response_model=UserResponse)
 async def get_user(
-    user_id: int,
     current_user: User = Depends(get_current_user)
 ):
     """Get a specific user by ID."""
     try:
-        user = await User.get(id=user_id)
+        user = await User.get(id=current_user.id)
         return UserResponse.from_orm(user)
     except DoesNotExist:
         raise HTTPException(
