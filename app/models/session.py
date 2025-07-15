@@ -10,6 +10,8 @@ class Session(Model):
     session_mode = fields.CharField(max_length=10, default="couple")  # "solo" or "couple"
     couple_id = fields.IntField(null=True)  # References couple.id (null for solo)
     current_participants = fields.IntField(default=1)  
+    status = fields.CharField(max_length=20, default="active")  # "active", "completed", etc.
+    max_participants = fields.IntField(default=2)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
     
@@ -27,6 +29,9 @@ class Session(Model):
     
     async def add_participant(self, user_id: int) -> bool:
         """Add a participant to the session if there's space."""
+        # Ensure we don't exceed the maximum allowed participants
+        if self.current_participants >= self.max_participants:
+            return False
         self.current_participants += 1
         await self.save(update_fields=["current_participants"])
         return True

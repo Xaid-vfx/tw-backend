@@ -69,7 +69,6 @@ class CoupleResponse(CoupleBase):
 
 # Session schemas
 class SessionBase(BaseModel):
-    session_type: str = Field(default="therapy", max_length=50)  # "therapy", "check-in", etc.
     session_mode: Literal["solo", "couple"] = Field(...)
 
 class SessionCreateSolo(SessionBase):
@@ -94,7 +93,6 @@ class SessionResponse(BaseModel):
     session_code: str
     creator_user_id: int
     session_mode: str
-    session_type: str
     couple_id: Optional[int] = None
     status: str
     max_participants: int

@@ -17,6 +17,27 @@ ALGORITHM = "HS256"
 security = HTTPBearer()
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+
+    email = "bigharborr@gmail.com"  # <-- Replace with your test user email
+    #email = "muhammedanas5186@gmail.com"
+
+    user = await User.filter(email=email).first()
+
+    # Fetch corresponding user from local DB
+    if user is None:
+        # Create a local profile from Supabase user data
+        user = await User.create(
+            email=email,
+            username="anas",
+            first_name="anas",
+            last_name="khan",
+            is_verified=True,  # Since they authenticated through Supabase
+            password_hash="supabase_auth"  # Placeholder since auth is handled by Supabase
+        )
+
+    return user
+
+async def get_current_user_authenticated(credentials: HTTPAuthorizationCredentials = Depends(security)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -25,7 +46,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     print("Auth header:", credentials.credentials)
 
-    # Ensure a token is present
     if not credentials or not credentials.credentials:
         raise credentials_exception
 
@@ -50,8 +70,20 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     # Fetch corresponding user from local DB
     user = await User.filter(email=email).first()
     if user is None:
-        # Optionally auto-create a local profile here.
-        raise credentials_exception
+        # Create a local profile from Supabase user data
+        try:
+            user = await User.create(
+                email=email,
+                username=payload.get("user_metadata", {}).get("username", email.split("@")[0]),
+                first_name=payload.get("user_metadata", {}).get("first_name", ""),
+                last_name=payload.get("user_metadata", {}).get("last_name", ""),
+                is_verified=True,  # Since they authenticated through Supabase
+                password_hash="supabase_auth"  # Placeholder since auth is handled by Supabase
+            )
+        except Exception as e:
+            print(f"Error creating local user: {e}")
+            raise credentials_exception
+
     return user
 
 @router.post("/register", response_model=UserResponse)
