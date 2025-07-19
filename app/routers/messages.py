@@ -15,11 +15,9 @@ load_dotenv()
 
 router = APIRouter(prefix="/couples/{couple_id}/messages", tags=["messages"])
 
-# Initialize mem0 client for AI agents
 client = MemoryClient(api_key=os.getenv("MEM0_API_KEY"))
-
-# Initialize Anthropic client for Claude 3 Haiku
 anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
 
 
 def log_message(level: str, message: str):
