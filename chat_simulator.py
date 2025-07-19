@@ -15,12 +15,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class ChatSimulator:
-    def __init__(self, base_url="http://localhost:8000", couple_id=1):
+    def __init__(self, base_url="http://localhost:8000", couple_id=2):
         self.base_url = base_url
         self.couple_id = couple_id
         self.endpoint = f"{base_url}/couples/{couple_id}/messages"
         self.session = requests.Session()
         self.chat_history = []
+        self.current_partner = "A"  # Default to Partner A
         
     def print_header(self):
         """Print chat header"""
@@ -29,9 +30,11 @@ class ChatSimulator:
         print("=" * 60)
         print(f"Couple ID: {self.couple_id}")
         print(f"Endpoint: {self.endpoint}")
+        print(f"Current Partner: {self.current_partner}")
         print("Type 'quit', 'exit', or 'bye' to end the chat")
         print("Type 'history' to see chat history")
         print("Type 'clear' to clear chat history")
+        print("Type 'partner A' or 'partner B' to switch partners")
         print("=" * 60)
         print()
     
@@ -40,10 +43,11 @@ class ChatSimulator:
         try:
             payload = {
                 "message": message,
-                "sender_id": sender_id
+                "sender_id": sender_id,
+                "partner": self.current_partner
             }
             
-            print(f"📤 Sending: {message[:50]}{'...' if len(message) > 50 else ''}")
+            print(f"📤 Sending (Partner {self.current_partner}): {message[:50]}{'...' if len(message) > 50 else ''}")
             
             response = self.session.post(
                 self.endpoint,
@@ -60,6 +64,7 @@ class ChatSimulator:
                 # Store in chat history
                 chat_entry = {
                     "timestamp": datetime.now().strftime("%H:%M:%S"),
+                    "partner": self.current_partner,
                     "user_message": message,
                     "ai_response": ai_response,
                     "memories_used": memories_used
@@ -100,7 +105,7 @@ class ChatSimulator:
         print("\n📝 CHAT HISTORY:")
         print("=" * 60)
         for i, entry in enumerate(self.chat_history, 1):
-            print(f"\n{i}. [{entry['timestamp']}]")
+            print(f"\n{i}. [{entry['timestamp']}] (Partner {entry['partner']})")
             print(f"   👤 You: {entry['user_message'][:100]}{'...' if len(entry['user_message']) > 100 else ''}")
             print(f"   🤖 AI: {entry['ai_response'][:100]}{'...' if len(entry['ai_response']) > 100 else ''}")
             print(f"   💾 Memories: {entry['memories_used']}")
@@ -128,7 +133,7 @@ class ChatSimulator:
         while True:
             try:
                 # Get user input
-                user_input = input("👤 You: ").strip()
+                user_input = input(f"👤 Partner {self.current_partner}: ").strip()
                 
                 # Handle special commands
                 if user_input.lower() in ['quit', 'exit', 'bye']:
@@ -139,6 +144,14 @@ class ChatSimulator:
                     continue
                 elif user_input.lower() == 'clear':
                     self.clear_history()
+                    continue
+                elif user_input.lower().startswith('partner '):
+                    partner = user_input.split()[1].upper()
+                    if partner in ['A', 'B']:
+                        self.current_partner = partner
+                        print(f"🔄 Switched to Partner {self.current_partner}")
+                    else:
+                        print("❌ Invalid partner. Use 'partner A' or 'partner B'")
                     continue
                 elif not user_input:
                     print("Please enter a message or command.")
@@ -161,7 +174,7 @@ def main():
     
     # Configuration
     base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
-    couple_id = int(os.getenv("COUPLE_ID", "1"))
+    couple_id = int(os.getenv("COUPLE_ID", "2"))
     
     # Create and run simulator
     simulator = ChatSimulator(base_url=base_url, couple_id=couple_id)
