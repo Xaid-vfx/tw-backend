@@ -22,6 +22,7 @@ class ChatSimulator:
         self.session = requests.Session()
         self.chat_history = []
         self.current_partner = "A"  # Default to Partner A
+        self.couple_names = {"A": "Alex", "B": "Mary"}  # Default names
         
     def print_header(self):
         """Print chat header"""
@@ -30,11 +31,13 @@ class ChatSimulator:
         print("=" * 60)
         print(f"Couple ID: {self.couple_id}")
         print(f"Endpoint: {self.endpoint}")
-        print(f"Current Partner: {self.current_partner}")
+        print(f"Current Partner: {self.current_partner} ({self.couple_names.get(self.current_partner, 'Unknown')})")
+        print(f"Couple: {self.couple_names.get('A', 'Partner A')} & {self.couple_names.get('B', 'Partner B')}")
         print("Type 'quit', 'exit', or 'bye' to end the chat")
         print("Type 'history' to see chat history")
         print("Type 'clear' to clear chat history")
         print("Type 'partner A' or 'partner B' to switch partners")
+        print("Type 'names Alex Mary' to set couple names")
         print("=" * 60)
         print()
     
@@ -44,10 +47,12 @@ class ChatSimulator:
             payload = {
                 "message": message,
                 "sender_id": sender_id,
-                "partner": self.current_partner
+                "partner": self.current_partner,
+                "couple_names": self.couple_names
             }
             
-            print(f"📤 Sending (Partner {self.current_partner}): {message[:50]}{'...' if len(message) > 50 else ''}")
+            current_name = self.couple_names.get(self.current_partner, f"Partner {self.current_partner}")
+            print(f"📤 Sending ({current_name}): {message[:50]}{'...' if len(message) > 50 else ''}")
             
             response = self.session.post(
                 self.endpoint,
@@ -65,6 +70,7 @@ class ChatSimulator:
                 chat_entry = {
                     "timestamp": datetime.now().strftime("%H:%M:%S"),
                     "partner": self.current_partner,
+                    "partner_name": current_name,
                     "user_message": message,
                     "ai_response": ai_response,
                     "memories_used": memories_used
@@ -105,7 +111,7 @@ class ChatSimulator:
         print("\n📝 CHAT HISTORY:")
         print("=" * 60)
         for i, entry in enumerate(self.chat_history, 1):
-            print(f"\n{i}. [{entry['timestamp']}] (Partner {entry['partner']})")
+            print(f"\n{i}. [{entry['timestamp']}] ({entry['partner_name']})")
             print(f"   👤 You: {entry['user_message'][:100]}{'...' if len(entry['user_message']) > 100 else ''}")
             print(f"   🤖 AI: {entry['ai_response'][:100]}{'...' if len(entry['ai_response']) > 100 else ''}")
             print(f"   💾 Memories: {entry['memories_used']}")
@@ -133,7 +139,8 @@ class ChatSimulator:
         while True:
             try:
                 # Get user input
-                user_input = input(f"👤 Partner {self.current_partner}: ").strip()
+                current_name = self.couple_names.get(self.current_partner, f"Partner {self.current_partner}")
+                user_input = input(f"👤 {current_name}: ").strip()
                 
                 # Handle special commands
                 if user_input.lower() in ['quit', 'exit', 'bye']:
@@ -149,9 +156,21 @@ class ChatSimulator:
                     partner = user_input.split()[1].upper()
                     if partner in ['A', 'B']:
                         self.current_partner = partner
-                        print(f"🔄 Switched to Partner {self.current_partner}")
+                        current_name = self.couple_names.get(self.current_partner, f"Partner {self.current_partner}")
+                        print(f"🔄 Switched to {current_name}")
                     else:
                         print("❌ Invalid partner. Use 'partner A' or 'partner B'")
+                    continue
+                elif user_input.lower().startswith('names '):
+                    parts = user_input.split()
+                    if len(parts) >= 3:
+                        self.couple_names["A"] = parts[1]
+                        self.couple_names["B"] = parts[2]
+                        print(f"✅ Couple names set: {self.couple_names['A']} & {self.couple_names['B']}")
+                        current_name = self.couple_names.get(self.current_partner, f"Partner {self.current_partner}")
+                        print(f"Current speaker: {current_name}")
+                    else:
+                        print("❌ Invalid format. Use 'names Alex Mary'")
                     continue
                 elif not user_input:
                     print("Please enter a message or command.")
@@ -174,7 +193,7 @@ def main():
     
     # Configuration
     base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
-    couple_id = int(os.getenv("COUPLE_ID", "2"))
+    couple_id = int(os.getenv("COUPLE_ID", "3"))
     
     # Create and run simulator
     simulator = ChatSimulator(base_url=base_url, couple_id=couple_id)
