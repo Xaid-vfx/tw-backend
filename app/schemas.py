@@ -58,6 +58,11 @@ class CoupleBase(BaseModel):
 class CoupleCreate(CoupleBase):
     pass
 
+class CoupleCreateWithPartner(BaseModel):
+    """Create a couple by inviting a partner via email"""
+    partner_email: str = Field(..., description="Email of the partner to invite")
+    relationship_start_date: Optional[date] = None
+
 class CoupleResponse(CoupleBase):
     id: int
     created_at: datetime
@@ -67,56 +72,18 @@ class CoupleResponse(CoupleBase):
     class Config:
         from_attributes = True
 
-# Session schemas
-class SessionBase(BaseModel):
-    session_mode: Literal["solo", "couple"] = Field(...)
-
-class SessionCreateSolo(SessionBase):
-    """Create a solo therapy session"""
-    session_mode: Literal["solo"] = "solo"
-
-class SessionCreateCouple(SessionBase):
-    """Create a couple therapy session"""
-    session_mode: Literal["couple"] = "couple"
-    partner_email: Optional[str] = Field(None, description="Email of partner to invite")
-
-class SessionJoin(BaseModel):
-    """Join an existing session using session code"""
-    session_code: str = Field(..., min_length=8, max_length=8)
-
-class SessionUpdate(BaseModel):
-    session_type: Optional[str] = Field(None, max_length=50)
-    status: Optional[str] = Field(None, max_length=20)
-
-class SessionResponse(BaseModel):
+class CoupleWithUsersResponse(BaseModel):
+    """Couple response with user details"""
     id: int
-    session_code: str
-    creator_user_id: int
-    session_mode: str
-    couple_id: Optional[int] = None
-    status: str
-    max_participants: int
-    current_participants: int
+    user1: UserResponse
+    user2: UserResponse
+    relationship_start_date: Optional[date] = None
     created_at: datetime
     updated_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-class SessionParticipantResponse(BaseModel):
-    id: int
-    session_id: int
-    user_id: int
-    role: str
-    joined_at: datetime
     is_active: bool
     
     class Config:
         from_attributes = True
-
-class SessionWithParticipants(SessionResponse):
-    """Session with participant information"""
-    participants: list[SessionParticipantResponse]
 
 # Enhanced Message schemas for chat app
 class MessageBase(BaseModel):
@@ -125,13 +92,11 @@ class MessageBase(BaseModel):
     message_type: str = Field(default="text", max_length=20)  # "text", "image", "file", etc.
     
 class MessageCreate(MessageBase):
-    session_id: int
     user_id: int  # Which user in the couple sent this message
     reply_to_message_id: Optional[int] = None  # For threading/replies
 
 class MessageResponse(MessageBase):
     id: int
-    session_id: int
     user_id: int
     reply_to_message_id: Optional[int] = None
     message_status: str = Field(default="sent")  # "sent", "delivered", "read"
@@ -143,7 +108,6 @@ class MessageResponse(MessageBase):
 
 # For chat conversation retrieval
 class ChatConversationResponse(BaseModel):
-    session_id: int
     user_id: int  # Specific user's conversation with AI
     messages: list[MessageResponse]
     total_messages: int

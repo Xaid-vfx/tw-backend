@@ -6,7 +6,6 @@ class Couple(Model):
     id = fields.IntField(pk=True)
     user1_id = fields.IntField()
     user2_id = fields.IntField()
-    session_id = fields.IntField()
     relationship_start_date = fields.DateField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
@@ -14,7 +13,7 @@ class Couple(Model):
     
     class Meta:
         table = "couples"
-        unique_together = [("user1_id", "user2_id", "session_id")]
+        unique_together = [("user1_id", "user2_id")]
     
     def __str__(self):
         return f"Couple: {self.user1_id} & {self.user2_id}"
